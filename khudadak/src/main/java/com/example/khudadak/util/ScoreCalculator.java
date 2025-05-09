@@ -46,11 +46,11 @@ public class ScoreCalculator {
         }
 
         // 3. 질소 상태
-        if (userInput.getNitrogenStatus().equals("부족")) {
+        if ("부족".equals(userInput.getNitrogenStatus())) {
             if (crop.isNitrogenFixing()) {
                 score += 15;
                 breakdown.put("질소 고정 효과", "+15");
-            } else if (!crop.getType().equals("잎채소")) {
+            } else if (!"잎채소".equals(crop.getType())) {
                 score += 10;
                 breakdown.put("질소 상태(부족)", "+10");
             }
@@ -64,6 +64,8 @@ public class ScoreCalculator {
 
         // 5. 병해충 회피
         int pestScore = 10;
+
+        // 5-1. 이전 작물의 병해충과 현재 작물의 병해충 비교
         if (previousCrop != null) {
             for (Pest pest : crop.getPests()) {
                 if (previousCrop.getPests().stream().anyMatch(p -> p.getPestName().equals(pest.getPestName()))) {
@@ -71,14 +73,31 @@ public class ScoreCalculator {
                 }
             }
         }
+
+        // 5-2. 프론트에서 전달된 병해충 데이터와 비교
+        if (userInput.getPests() != null && !userInput.getPests().isEmpty()) {
+            for (Pest pest : crop.getPests()) {
+                if (userInput.getPests().contains(pest.getPestName())) {
+                    pestScore -= 2;
+                }
+            }
+        }
+
+        // 최종 병해충 점수 계산
         score += Math.max(pestScore, 0);
         breakdown.put("병해충 회피", "+" + pestScore);
 
         // 6. 작부 시기 겹침
-        if (userInput.getAvailablePeriod().contains(crop.getPlantingMonth())) {
-            score += 10;
-            breakdown.put("작부 시기 겹침", "+10");
+        if (userInput.getAvailablePeriod() != null && !userInput.getAvailablePeriod().isEmpty()) {
+            for (int period : userInput.getAvailablePeriod()) {
+                if (period == crop.getPlantingMonth()) {
+                    score += 10;
+                    breakdown.put("작부 시기 겹침", "+10");
+                    break;  // 첫 번째로 겹치는 시기만 점수 부여
+                }
+            }
         }
+
 
         // 7. 생육 기간 다양성
         if (previousCrop != null) {
